@@ -24,6 +24,11 @@ python ap.py state-get
   every 30 seconds (up to 10 minutes) until it is cleared. Set `running_since` (UTC ISO) before
   step 1 and clear it (`null`) when you finish, also when you stop early.
 - **TARGET** = the date the prompt gives, else `state.target_date`.
+- **Pending lists first.** If `state.pending_folders` is not empty, a fetch downloaded lists that
+  were never imported: import each (`import '<folder>/*.xlsx'`) and do steps 1.2-3 and 2-5 now.
+- **Stay in the foreground.** Run every command in the foreground and never end your turn before
+  :58 UTC. No background commands, no Monitor, no `sleep` loops: a turn that ends early leaves
+  nobody to import lists or answer Flyme.
 - **Phase.** Once `state.reports_sent` has both PARK and ROYAL, you are in the **last-minute
   phase**: only step 1 (new lists) and step 4/7 (Flyme writes to us) matter. Raise nothing new
   with Flyme unless a new list or their own message shows a change, and resend a resort's reports
@@ -170,7 +175,10 @@ returned once. Loop until :58 UTC:
 
 - When it returns messages, do step 4 straight away and save state.
 - **Check email every 15 minutes**: whenever `state.last_fetch` is 15 minutes old or more (so at
-  about :05, :20, :35 and :50), run `fetch` (step 1); if it finds lists, do steps 1-3 and 5.
+  about :05, :20, :35 and :50), run `fetch` (step 1). If it returns `lists`, import them in that
+  same turn and carry on with steps 1-3 and 5 before waiting again. Also act on
+  `state.pending_folders` whenever it is not empty.
+- Flyme saying the lists are "sent" means: run `fetch` straight away.
 
 Shorten the last timeout so you stop by :58, clear `running_since`, and finish with a
 one-paragraph summary.
