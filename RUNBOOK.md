@@ -24,6 +24,8 @@ python ap.py state-get
   every 30 seconds (up to 10 minutes) until it is cleared. Set `running_since` (UTC ISO) before
   step 1 and clear it (`null`) when you finish, also when you stop early.
 - **TARGET** = the date the prompt gives, else `state.target_date`.
+- **`state.ops_notes`** are instructions from the ops manager. Read them every run and follow them;
+  they override this runbook where they differ (e.g. "Sun is done for now, watch for amendments").
 - **Pending lists first.** If `state.pending_folders` is not empty, a fetch downloaded lists that
   were never imported: import each (`import '<folder>/*.xlsx'`) and do steps 1.2-3 and 2-5 now.
 - **Stay in the foreground.** Run every command in the foreground and never end your turn before
