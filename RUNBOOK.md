@@ -35,13 +35,15 @@ python ap.py state-get
 python ap.py fetch --code "<LIST_CODE from the prompt>" --out /tmp/lists
 ```
 
-It only returns attachments of messages not taken before. If it found files:
+VA put the code in the body of their list emails. `fetch` downloads the .xlsx attachments of new
+messages carrying it (and of later messages in the same thread) into a fresh folder, printed as
+`folder`. If it found files:
 
-1. `python ap.py import '/tmp/lists/*.xlsx'` (quoted, the server expands it) — imports every file
-   into production in one call, checklists first. Note each file's updated / not found counts.
-2. Reconcile needs the files named like `SIR ARR CONFIRMATION LIST.xlsx`. If the downloaded names
-   already contain SIR/RYL and ARR/DEP, `python ap.py reconcile --dir /tmp/lists`. A file without
-   SIR/RYL in its name is a combined list: skip reconcile for it and rely on step 2's checks.
+1. `python ap.py import '<folder>/*.xlsx'` (quoted, the server expands it) — imports every file of
+   that fetch into production in one call, checklists first. Note each file's updated / not found
+   counts.
+2. If the file names contain SIR/RYL and ARR/DEP, `python ap.py reconcile --dir <folder>`. A file
+   without SIR/RYL in its name is a combined list: skip reconcile for it and rely on step 2.
 3. Save `lists[<resort>_<direction>] = {"file": ..., "imported_at": ...}` in state.
 
 ## 2. Find what needs Flyme
