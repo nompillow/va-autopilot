@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python ap.py import:*)",
+      "Bash(python ap.py move:*)"
+    ]
+  }
+}
