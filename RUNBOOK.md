@@ -72,18 +72,36 @@ anything already in `state.issues`.
 ## 3. Message Flyme Office
 
 At most one message per run, to **Flyme Office**, written as the ops manager would: short and
-plain. **Lead every item with the VA PNR** (it is what Flyme works from; `splits`, `connections`
-and `flights --pax` print it), then the flight, the pax count, and exactly what you ask (move to
-which flight, confirm a cancellation, add to the list). Group pax sharing a PNR into one item. Add
-names only when a PNR covers more people than the item is about, or when there is no PNR (then
-say "no PNR" and give `SURNAME Firstname`). Never say it is automated. Shape (made-up data):
+plain. Each item:
+
+- starts with the **VA PNR** (Flyme works from it; `splits`, `connections` and `flights --pax`
+  print it), the flight, the seat count and exactly what you ask (move to which flight, confirm a
+  cancellation, add to the list);
+- then lists **every person on their own line**, exactly as the commands print them: `Mr` / `Ms`
+  for adults, `Master` for a child, and `(INF)` after an infant;
+- counts seats without infants: an infant takes no seat ("3 pax + 1 INF").
+
+Group people sharing a PNR into one item. With no PNR, write "no PNR". Never say it is automated.
+Shape (made-up data):
 
 ```
 Hi, for tomorrow 03 Nov (Sun arrivals):
-1. PNR 0034AB (3 pax) on VP266A, their BA61 lands 09:30 but check-in is 09:00. Can you move them to VP608?
-2. PNR 0034CD (1 pax, JONES Mark) is on VP836C but the rest of his room, PNR 0034EF, is on Q2-7006. Can he join them?
+
+1. PNR 0034AB, VP266A, 3 pax + 1 INF. Their BA61 lands 09:30 but check-in is 09:00, can you move them to VP608?
+Mr SMITH John
+Ms SMITH Anna
+Master SMITH Tom
+SMITH Baby (INF)
+
+2. PNR 0034CD, VP836C, 1 pax. The rest of his room (PNR 0034EF) is on Q2-7006, can he join them?
+Mr JONES Mark
+
 Thanks
 ```
+
+**Infants and swaps.** An infant takes no seat, so it never counts towards a seat swap, but it
+must always travel with an adult of its booking. `move` adds a booking's infants to their adults
+automatically and refuses to move an infant on its own; propose moves and swaps that way too.
 
 ```
 python ap.py wa-send --to "Flyme Office" --text "..."
