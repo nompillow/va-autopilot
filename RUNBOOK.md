@@ -35,16 +35,23 @@ python ap.py state-get
 python ap.py fetch --code "<LIST_CODE from the prompt>" --out /tmp/lists
 ```
 
-VA put the code in the body of their list emails. `fetch` downloads the .xlsx attachments of new
-messages carrying it (and of later messages in the same thread) into a fresh folder, printed as
-`folder`. If it found files:
+`fetch` looks at every new email in the transfers inbox (only ones received since the autopilot
+started; each email once) and downloads its Excel files. It sorts them:
 
-1. `python ap.py import '<folder>/*.xlsx'` (quoted, the server expands it) — imports every file of
-   that fetch into production in one call, checklists first. Note each file's updated / not found
-   counts.
+- `lists`: files named like VA lists (CHECKLIST / CONFIRMATION) or sent in a thread that carries
+  the code, saved in `folder`. Only these are imported.
+- `other_excel`: any other Excel file (e.g. VA's FOC sheet). Never import these; note them in
+  `state.log` once.
+
+If `lists` is not empty:
+
+1. `python ap.py import '<folder>/*.xlsx'` (quoted, the server expands it) — imports that fetch's
+   lists into production in one call, checklists first. Note each file's updated / not found
+   counts. A list for a date other than TARGET is still imported (it is VA's latest), but only
+   TARGET is checked in step 2.
 2. If the file names contain SIR/RYL and ARR/DEP, `python ap.py reconcile --dir <folder>`. A file
    without SIR/RYL in its name is a combined list: skip reconcile for it and rely on step 2.
-3. Save `lists[<resort>_<direction>] = {"file": ..., "imported_at": ...}` in state.
+3. Save `lists[<resort>_<direction>] = {"file": ..., "received": ..., "imported_at": ...}`.
 
 ## 2. Find what needs Flyme
 
@@ -159,9 +166,14 @@ python ap.py wa-wait --to "Flyme Office" --timeout 240
 ```
 
 Returns as soon as Flyme writes (or after 4 minutes with "no new messages"); each message is
-returned once. When it returns messages, do step 4 straight away, save state, and loop. Every
-third loop run `fetch` (step 1); if it finds files, do steps 1-3 and 5. Shorten the last timeout
-so you stop by :58, clear `running_since`, and finish with a one-paragraph summary.
+returned once. Loop until :58 UTC:
+
+- When it returns messages, do step 4 straight away and save state.
+- **Check email every 15 minutes**: whenever `state.last_fetch` is 15 minutes old or more (so at
+  about :05, :20, :35 and :50), run `fetch` (step 1); if it finds lists, do steps 1-3 and 5.
+
+Shorten the last timeout so you stop by :58, clear `running_since`, and finish with a
+one-paragraph summary.
 
 ## Hard limits
 
