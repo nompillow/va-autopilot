@@ -23,7 +23,9 @@ python ap.py state-get
 - **One run at a time.** If state has `running_since` less than 10 minutes old, poll `state-get`
   every 30 seconds (up to 10 minutes) until it is cleared. Set `running_since` (UTC ISO) before
   step 1 and clear it (`null`) when you finish, also when you stop early.
-- **TARGET** = the date the prompt gives, else `state.target_date`.
+- **TARGET** = the date the prompt gives, else **tomorrow in Maldives time** (MVT today + 1). If
+  `state.target_date` is a different date, a new day has started: set `target_date` to TARGET and
+  reset `lists`, `issues` and `reports_sent` to empty (keep `log` and `ops_notes`).
 - **`state.ops_notes`** are instructions from the ops manager. Read them every run and follow them;
   they override this runbook where they differ (e.g. "Sun is done for now, watch for amendments").
 - **Pending lists first.** If `state.pending_folders` is not empty, a fetch downloaded lists that
@@ -59,6 +61,32 @@ If `lists` is not empty:
 2. If the file names contain SIR/RYL and ARR/DEP, `python ap.py reconcile --dir <folder>`. A file
    without SIR/RYL in its name is a combined list: skip reconcile for it and rely on step 2.
 3. Save `lists[<resort>_<direction>] = {"file": ..., "received": ..., "imported_at": ...}`.
+
+## 1b. VA's ticket replies (the Changes page's Check Replies)
+
+```
+python ap.py replies
+```
+
+Reads VA's replies to the change emails we sent in the last 3 days (additional pax, name change,
+flight move, cancellation) that are still open in the Transfers inbox, reads each ticket PDF and
+prints, per thread (`push N`), who each PNR belongs to and what the ticket says about their flight.
+For each thread with a ticket:
+
+- If any `->` line is not `already set`, or says `seat on` or `MOVE`, apply it:
+  `python ap.py replies-apply --push N`. That writes the PNRs and seats/moves passengers on the
+  flight their ticket names, exactly like the Apply button (it re-reads the thread first, and skips
+  anything ambiguous with a reason).
+- A `DIFFERS` line (holds one flight, ticket names another): add `--take` **only** when the thread
+  is a `flight_move` email, because then the ticket is VA's answer to the move we asked for.
+  Otherwise do not take it; report it (often one seaplane seat under two codes).
+- `!!` (on two tickets), `?` (no ticket / name not on the email), `x ... ask VA to void`, and
+  `VA says (...)` lines are for the ops manager: put them in the next reports message, once each
+  (track them in `state.replies_reported` by push id). Never apply a thread with an `!!` line
+  without the ops manager.
+- Never archive anything in Front; the ops manager does that.
+
+Save `state.replies_applied` (push ids and what was written) so a thread is applied once.
 
 ## 2. Find what needs Flyme
 
@@ -177,7 +205,7 @@ returned once. Loop until :58 UTC:
 
 - When it returns messages, do step 4 straight away and save state.
 - **Check email every 15 minutes**: whenever `state.last_fetch` is 15 minutes old or more (so at
-  about :05, :20, :35 and :50), run `fetch` (step 1). If it returns `lists`, import them in that
+  about :05, :20, :35 and :50), run `fetch` (step 1) and `replies` (step 1b). If it returns `lists`, import them in that
   same turn and carry on with steps 1-3 and 5 before waiting again. Also act on
   `state.pending_folders` whenever it is not empty.
 - Flyme saying the lists are "sent" means: run `fetch` straight away.
@@ -188,7 +216,7 @@ one-paragraph summary.
 ## Hard limits
 
 - WhatsApp only to **Flyme Office** and **Reports x Ramzan** (the server refuses anything else).
-- Database writes only through `import` and `move`.
+- Database writes only through `import`, `move` and `replies-apply`.
 - No email, no Front changes, no git pushes.
 - If something looks badly wrong (an import failing, most of a list unmatched, a flight losing
   everyone), do not repair it and send nothing to Flyme about it: note it in `state.log` and say it

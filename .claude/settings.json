@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(python ap.py import:*)",
-      "Bash(python ap.py move:*)"
+      "Bash(python ap.py move:*)",
+      "Bash(python ap.py replies-apply:*)"
     ]
   }
 }
